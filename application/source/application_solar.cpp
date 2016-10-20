@@ -49,8 +49,8 @@ void ApplicationSolar::render() const{
   // draw bound vertex array using bound shader
   glDrawElements(planet_object.draw_mode, planet_object.num_elements, model::INDEX.type, NULL);
   */
-  for (Planet planet : planets) {
-    upload_planet_transforms(planet);
+  for (auto planet : planets) {
+    upload_planet_transforms(*planet);
   }
 }
 
@@ -81,23 +81,23 @@ void ApplicationSolar::uploadUniforms() {
 
 // handle key input
 void ApplicationSolar::keyCallback(int key, int scancode, int action, int mods) {
-  if (key == GLFW_KEY_W && action == GLFW_PRESS) {
+  if (key == GLFW_KEY_W && (action == GLFW_REPEAT || action== GLFW_PRESS)) {
     m_view_transform = glm::translate(m_view_transform, glm::fvec3{0.0f, 0.0f, -0.1f});
     updateView();
   }
-  else if (key == GLFW_KEY_S && action == GLFW_PRESS) {
+  else if (key == GLFW_KEY_S && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
     m_view_transform = glm::translate(m_view_transform, glm::fvec3{0.0f, 0.0f, 0.1f});
     updateView();
   }
-  else if (key == GLFW_KEY_A && action == GLFW_PRESS) {
+  else if (key == GLFW_KEY_A && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
     m_view_transform = glm::translate(m_view_transform, glm::fvec3{ -0.1f, 0.0f, 0.0f });
     updateView();
   }
-  else if (key == GLFW_KEY_D && action == GLFW_PRESS) {
+  else if (key == GLFW_KEY_D && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
     m_view_transform = glm::translate(m_view_transform, glm::fvec3{ 0.1f, 0.0f, 0.0f });
     updateView();
   }
-  else if (key == GLFW_KEY_E && action == GLFW_PRESS) {
+  else if (key == GLFW_KEY_E && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
     m_view_transform = glm::rotate(m_view_transform, float(-0.1), glm::fvec3{ 1.0f, 0.0f, 0.0f });
     updateView();
   }
@@ -118,33 +118,28 @@ void ApplicationSolar::initializeShaderPrograms() {
 // load models
 void ApplicationSolar::initializeGeometry() {
   // initialize planet properties
-  planets.at(0) = Planet(0.400, 0.00, 1, 0.00);		// Sun
-  planets.at(1) = Planet(0.050, 0.55, 1, 3.74);		// Mercury
-  planets.at(1).parent = std::make_shared<Planet>(planets.at(0));
-  planets.at(2) = Planet(0.080, 0.78, 1, 2.50);		// Venus
-  planets.at(2).parent = std::make_shared<Planet>(planets.at(0));
-  planets.at(3) = Planet(0.090, 0.98, 1, 1.98);		// Earth
-  planets.at(3).parent = std::make_shared<Planet>(planets.at(0));
-  planets.at(4) = Planet(0.070, 1.20, 1, 1.40);		// Mars
-  planets.at(4).parent = std::make_shared<Planet>(planets.at(0));
-  planets.at(5) = Planet(0.140, 2.00, 1, 1.31);		// Jupiter
-  planets.at(5).parent = std::make_shared<Planet>(planets.at(0));
-  planets.at(6) = Planet(0.120, 4.00, 1, 0.97);		// Saturn
-  planets.at(6).parent = std::make_shared<Planet>(planets.at(0));
-  planets.at(7) = Planet(0.091, 8.00, 1, 0.68);		// Uranus 
-  planets.at(7).parent = std::make_shared<Planet>(planets.at(0));
-  planets.at(8) = Planet(0.089, 11.0, 1, 0.54);		// Neptun
-  planets.at(8).parent = std::make_shared<Planet>(planets.at(0));
-  planets.at(9) = Planet(0.030, 12.0, 1, 0.47);		// Pluto
-  planets.at(9).parent = std::make_shared<Planet>(planets.at(0));
-  //Beim Mond ist dist die Entfernung zur Erde, orb_speed die Geschwindigkeit um die Erde
-  planets.at(10) = Planet(0.035, 0.1, 1.2, 6.00);	// MOON
-  planets.at(10).parent = std::make_shared<Planet>(planets.at(3));
-  /* Debug for pointer issue
-  if (planets.at(10).parent != nullptr) {
-    std::cout << "parent of moon not null" << std::endl;
-  }
-  */
+  planets.at(0) = std::make_shared<Planet>(0.400, 0.00, 1, 0.00);		// Sun
+  planets.at(1) = std::make_shared<Planet>(0.050, 0.55, 1, 3.74);		// Mercury
+  planets.at(1)->parent = planets.at(0);
+  planets.at(2) = std::make_shared<Planet>(0.080, 0.78, 1, 2.50);		// Venus
+  planets.at(2)->parent = planets.at(0);
+  planets.at(3) = std::make_shared<Planet>(0.090, 0.98, 1, 1.98);		// Earth
+  planets.at(3)->parent = planets.at(0);
+  planets.at(4) = std::make_shared<Planet>(0.070, 1.20, 1, 1.40);		// Mars
+  planets.at(4)->parent = planets.at(0);
+  planets.at(5) = std::make_shared<Planet>(0.140, 2.00, 1, 1.31);		// Jupiter
+  planets.at(5)->parent = planets.at(0);
+  planets.at(6) = std::make_shared<Planet>(0.120, 4.00, 1, 0.97);		// Saturn
+  planets.at(6)->parent = planets.at(0);
+  planets.at(7) = std::make_shared<Planet>(0.091, 8.00, 1, 0.68);		// Uranus 
+  planets.at(7)->parent = planets.at(0);
+  planets.at(8) = std::make_shared<Planet>(0.089, 11.0, 1, 0.54);		// Neptun
+  planets.at(8)->parent = planets.at(0);
+  planets.at(9) = std::make_shared<Planet>(0.030, 12.0, 1, 0.47);		// Pluto
+  planets.at(9)->parent = planets.at(0);
+  // dist is distance to earth, same applies to orb_speed
+  planets.at(10) = std::make_shared<Planet>(0.035, 0.15, 0.08, 6.00);	// MOON
+  planets.at(10)->parent = planets.at(3);
 
   model planet_model = model_loader::obj(m_resource_path + "models/sphere.obj", model::NORMAL);
 
@@ -183,33 +178,20 @@ void ApplicationSolar::initializeGeometry() {
   planet_object.num_elements = GLsizei(planet_model.indices.size());
 }
 
-void ApplicationSolar::upload_planet_transforms(Planet& planet) const {
+void ApplicationSolar::upload_planet_transforms(Planet const& planet) const {
   glm::mat4 model_matrix;
-  /* not working due to a pointer bug
   std::stack<glm::mat4> matrices;
   std::shared_ptr<Planet> current = planet.parent;
-  if (planet.parent == nullptr && planet.orbital_speed == 6.0f) {
-    //std::cout << "probably found moon" << std::endl;
-  }
   while (current != nullptr) {
-    std::cout << "Got into while" << std::endl;
     model_matrix = glm::rotate(glm::fmat4{}, float(glfwGetTime() * current->orbital_speed), glm::fvec3{ 0.0f, 1.0f, 0.0f });
     model_matrix = glm::translate(model_matrix, glm::fvec3{ 0.0f, 0.0f, -1.0f * current->distance });
     matrices.push(model_matrix);
     current = current->parent;
   }
-  //std::cout << "Out of while" << std::endl;
   model_matrix = glm::mat4{};
   while (!matrices.empty()) {
     model_matrix *= matrices.top();
     matrices.pop();
-  }
-  */
-  
-  // hard coded moon detection
-  if (planet.orbital_speed == 6.0f) {
-    model_matrix = glm::rotate(model_matrix, float(glfwGetTime() * planets.at(3).orbital_speed), glm::fvec3{ 0.0f, 1.0f, 0.0f });
-    model_matrix = glm::translate(model_matrix, glm::fvec3{ 0.0f, 0.0f, -1.0f * planets.at(3).distance });
   }
 
 	// bind shader to upload uniforms

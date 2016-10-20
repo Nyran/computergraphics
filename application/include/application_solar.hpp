@@ -27,7 +27,7 @@ class ApplicationSolar : public Application {
 
 
   // calculate and upload model- and normal-matrix
-  void upload_planet_transforms(Planet& planet) const;
+  void upload_planet_transforms(Planet const& planet) const;
 
  protected:
   void initializeShaderPrograms();
@@ -38,7 +38,7 @@ class ApplicationSolar : public Application {
   model_object planet_object;
 
   // planet container
-  std::array<Planet, 11> planets;
+  std::array<std::shared_ptr<Planet>, 11> planets;
 };
 
 #endif
