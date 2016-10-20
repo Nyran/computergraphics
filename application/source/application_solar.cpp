@@ -103,6 +103,18 @@ void ApplicationSolar::keyCallback(int key, int scancode, int action, int mods) 
   }
 }
 
+// handle delta mouse movement input
+void ApplicationSolar::mouseCallback(double pos_x, double pos_y) {
+  //mouse handling
+  // rotate around x-axis (up and down)
+  m_view_transform *= glm::rotate(glm::mat4{}, float(pos_y*0.005), glm::vec3{ -1.0f, 0.0f, 0.0f });
+  // calculate up vector from model to world space to avoid 6DOF
+  glm::fvec4 world_up = glm::fvec4{ 0.0f, -1.0f, 0.0f, 0.0f } * m_view_transform;
+  // rotate around world space y-axis (left and right)
+  m_view_transform *= glm::rotate(glm::mat4(), float(pos_x*0.005), glm::vec3{ world_up });
+  updateView();
+}
+
 // load shader programs
 void ApplicationSolar::initializeShaderPrograms() {
   // store shader program objects in container
