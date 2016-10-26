@@ -31,6 +31,13 @@ class ApplicationSolar : public Application {
   // calculate and upload model- and normal-matrix
   void upload_planet_transforms(Planet const& planet) const;
 
+  // upload stars
+  void upload_stars() const;
+
+  // create and upload planet circle
+  std::vector<float> create_orbit(int const depth) const;
+  void upload_orbit(Planet const& planet) const;
+
  protected:
   void initializeShaderPrograms();
   void initializeGeometry();
@@ -38,6 +45,8 @@ class ApplicationSolar : public Application {
 
   // cpu representation of model
   model_object planet_object;
+  model_object star_object;
+  model_object orbit_object;
 
   // planet container
   std::array<std::shared_ptr<Planet>, 11> planets;
