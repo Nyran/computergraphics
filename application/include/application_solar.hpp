@@ -50,6 +50,9 @@ class ApplicationSolar : public Application {
 
   // planet container
   std::array<std::shared_ptr<Planet>, 11> planets;
+
+  // current shader
+  std::string shader = "planet";
 };
 
 #endif

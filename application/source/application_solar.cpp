@@ -63,8 +63,8 @@ void ApplicationSolar::updateView() {
   // vertices are transformed in camera space, so camera transform must be inverted
   glm::fmat4 view_matrix = glm::inverse(m_view_transform);
   // upload matrix to gpu
-  glUseProgram(m_shaders.at("planet").handle);
-  glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("ViewMatrix"),
+  glUseProgram(m_shaders.at(shader).handle);
+  glUniformMatrix4fv(m_shaders.at(shader).u_locs.at("ViewMatrix"),
                      1, GL_FALSE, glm::value_ptr(view_matrix));
   glUseProgram(m_shaders.at("star").handle);
   glUniformMatrix4fv(m_shaders.at("star").u_locs.at("ViewMatrix"),
@@ -76,8 +76,8 @@ void ApplicationSolar::updateView() {
 
 void ApplicationSolar::updateProjection() {
   // upload matrix to gpu
-  glUseProgram(m_shaders.at("planet").handle);
-  glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("ProjectionMatrix"),
+  glUseProgram(m_shaders.at(shader).handle);
+  glUniformMatrix4fv(m_shaders.at(shader).u_locs.at("ProjectionMatrix"),
                      1, GL_FALSE, glm::value_ptr(m_view_projection));
   glUseProgram(m_shaders.at("star").handle);
   glUniformMatrix4fv(m_shaders.at("star").u_locs.at("ProjectionMatrix"),
@@ -129,6 +129,14 @@ void ApplicationSolar::keyCallback(int key, int scancode, int action, int mods) 
     m_view_transform = temp;
     updateView();
   }
+  else if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
+    shader = "planet";
+    uploadUniforms();
+  }
+  else if (key == GLFW_KEY_2 && action == GLFW_PRESS) {
+    shader = "cel";
+    uploadUniforms();
+  }
 }
 
 // handle delta mouse movement input
@@ -152,12 +160,15 @@ void ApplicationSolar::initializeShaderPrograms() {
 											m_resource_path + "shaders/star.frag"});
   m_shaders.emplace("orbit", shader_program{ m_resource_path + "shaders/orbit.vert",
                       m_resource_path + "shaders/orbit.frag" });
+  m_shaders.emplace("cel", shader_program{ m_resource_path + "shaders/cel.vert",
+                      m_resource_path + "shaders/cel.frag" });
 
   // request uniform locations for shader program
   m_shaders.at("planet").u_locs["NormalMatrix"] = -1;
   m_shaders.at("planet").u_locs["ModelMatrix"] = -1;
   m_shaders.at("planet").u_locs["ViewMatrix"] = -1;
   m_shaders.at("planet").u_locs["ProjectionMatrix"] = -1;
+  m_shaders.at("planet").u_locs["Color"] = -1;
 
   m_shaders.at("star").u_locs["ViewMatrix"] = -1;
   m_shaders.at("star").u_locs["ProjectionMatrix"] = -1;
@@ -165,33 +176,40 @@ void ApplicationSolar::initializeShaderPrograms() {
   m_shaders.at("orbit").u_locs["ModelMatrix"] = -1;
   m_shaders.at("orbit").u_locs["ViewMatrix"] = -1;
   m_shaders.at("orbit").u_locs["ProjectionMatrix"] = -1;
+
+  m_shaders.at("cel").u_locs["NormalMatrix"] = -1;
+  m_shaders.at("cel").u_locs["ModelMatrix"] = -1;
+  m_shaders.at("cel").u_locs["ViewMatrix"] = -1;
+  m_shaders.at("cel").u_locs["ProjectionMatrix"] = -1;
+  m_shaders.at("cel").u_locs["Color"] = -1;
 }
 
 // load models
 void ApplicationSolar::initializeGeometry() {
   // initialize planet properties
-  planets.at(0) = std::make_shared<Planet>(0.400, 0.00, 1, 0.00, false);		// Sun
-  planets.at(1) = std::make_shared<Planet>(0.050, 0.55, 1, 3.74, true);		// Mercury
+  // size, disatnce, rotation speed, orbital speed, orbit, color
+  planets.at(0) = std::make_shared<Planet>(0.400, 0.00, 1, 0.00, false, glm::fvec3{1.0, 0.40, 0.00});		// Sun
+  planets.at(1) = std::make_shared<Planet>(0.050, 0.55, 1, 3.74, true, glm::fvec3{0.40, 0.40, 0.40});		// Mercury
   planets.at(1)->parent = planets.at(0);
-  planets.at(2) = std::make_shared<Planet>(0.080, 0.78, 1, 2.50, true);		// Venus
+  planets.at(2) = std::make_shared<Planet>(0.080, 0.78, 1, 2.50, true, glm::fvec3{0.87, 0.85, 0.74});		// Venus
   planets.at(2)->parent = planets.at(0);
-  planets.at(3) = std::make_shared<Planet>(0.090, 0.98, 1, 1.98, true);		// Earth
+  planets.at(3) = std::make_shared<Planet>(0.090, 0.98, 1, 1.98, true, glm::fvec3{0.00, 0.20, 0.80});		// Earth
   planets.at(3)->parent = planets.at(0);
-  planets.at(4) = std::make_shared<Planet>(0.070, 1.20, 1, 1.40, true);		// Mars
+  planets.at(4) = std::make_shared<Planet>(0.070, 1.30, 1, 1.40, true, glm::fvec3{0.80, 0.00, 0.00});		// Mars
   planets.at(4)->parent = planets.at(0);
-  planets.at(5) = std::make_shared<Planet>(0.140, 2.00, 1, 1.31, true);		// Jupiter
+  planets.at(5) = std::make_shared<Planet>(0.140, 2.00, 1, 1.31, true, glm::fvec3{1.00, 0.80, 0.40});		// Jupiter
   planets.at(5)->parent = planets.at(0);
-  planets.at(6) = std::make_shared<Planet>(0.120, 4.00, 1, 0.97, true);		// Saturn
+  planets.at(6) = std::make_shared<Planet>(0.120, 4.00, 1, 0.97, true, glm::fvec3{1.00, 0.89, 0.62});		// Saturn
   planets.at(6)->parent = planets.at(0);
-  planets.at(7) = std::make_shared<Planet>(0.091, 8.00, 1, 0.68, true);		// Uranus 
+  planets.at(7) = std::make_shared<Planet>(0.091, 8.00, 1, 0.68, true, glm::fvec3{0.60, 0.80, 1.00});		// Uranus 
   planets.at(7)->parent = planets.at(0);
-  planets.at(8) = std::make_shared<Planet>(0.089, 11.0, 1, 0.54, true);		// Neptun
+  planets.at(8) = std::make_shared<Planet>(0.089, 11.0, 1, 0.54, true, glm::fvec3{0.40, 0.60, 1.00});		// Neptun
   planets.at(8)->parent = planets.at(0);
-  planets.at(9) = std::make_shared<Planet>(0.030, 12.0, 1, 0.47, true);		// Pluto
+  planets.at(9) = std::make_shared<Planet>(0.030, 12.0, 1, 0.47, true, glm::fvec3{0.80, 0.53, 0.00});		// Pluto
   planets.at(9)->parent = planets.at(0);
   // dist is distance to earth, same applies to orb_speed
   // orbit of moon coming soon ;)
-  planets.at(10) = std::make_shared<Planet>(0.035, 0.15, 0.08, 6.00, false);	// MOON
+  planets.at(10) = std::make_shared<Planet>(0.035, 0.15, 0.08, 6, false, glm::fvec3{0.5, 0.5, 0.50});		// MOON
   planets.at(10)->parent = planets.at(3);
 
   model planet_model = model_loader::obj(m_resource_path + "models/sphere.obj", model::NORMAL);
@@ -323,18 +341,21 @@ void ApplicationSolar::upload_planet_transforms(Planet const& planet) const {
   }
 
 	// bind shader to upload uniforms
-	glUseProgram(m_shaders.at("planet").handle);
+	glUseProgram(m_shaders.at(shader).handle);
 
 	model_matrix = glm::rotate(model_matrix, float(glfwGetTime() * planet.orbital_speed), glm::fvec3{ 0.0f, 1.0f, 0.0f });
 	model_matrix = glm::translate(model_matrix, glm::fvec3{ 0.0f, 0.0f, -1.0f * planet.distance });
 	model_matrix = glm::scale(model_matrix, glm::fvec3{planet.size});
-	glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("ModelMatrix"),
+	glUniformMatrix4fv(m_shaders.at(shader).u_locs.at("ModelMatrix"),
 		1, GL_FALSE, glm::value_ptr(model_matrix));
 	
 	// extra matrix for normal transformation to keep them orthogonal to surface
-	glm::fmat4 normal_matrix = glm::inverseTranspose(glm::inverse(m_view_transform) * model_matrix);
-	glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("NormalMatrix"),
+	glm::fmat4 normal_matrix = glm::transpose(glm::inverse(model_matrix));
+	glUniformMatrix4fv(m_shaders.at(shader).u_locs.at("NormalMatrix"),
 		1, GL_FALSE, glm::value_ptr(normal_matrix));
+
+	glm::fvec3 color_vector = planet.color;
+	glUniform3fv(m_shaders.at(shader).u_locs.at("Color"), 1, glm::value_ptr(color_vector));
 
 	// bind the VAO to draw
 	glBindVertexArray(planet_object.vertex_AO);
