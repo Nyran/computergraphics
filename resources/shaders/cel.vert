@@ -21,7 +21,7 @@ vec3 lightPos = vec3(0.0, 0.0, 0.0);
 
 void main(void)
 {
-	vec3 light = (vec4(lightPos, 1.0) * inverse(ViewMatrix)).xyz;
+	vec3 light = (ViewMatrix * vec4(lightPos, 1.0)).xyz;
 	gl_Position = (ProjectionMatrix  * ViewMatrix * ModelMatrix) * vec4(in_Position, 1.0);
 	pass_Normal = normalize(NormalMatrix * vec4(in_Normal, 0.0)).xyz;
 	// hopefully position of vertex in world space
