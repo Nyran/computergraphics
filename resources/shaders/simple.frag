@@ -18,23 +18,23 @@ float shininess = 16;
 
 
 void main() {
-	vec3 ambient = ambientC * ambientL;
+    vec3 ambient = ambientC * ambientL;
 
-	float lambert = max(dot(pass_Normal, lightDir), 0);
-	vec3 diffuse = diffuseC * diffuseL * lambert;
+    float lambert = max(dot(pass_Normal, lightDir), 0);
+    vec3 diffuse = diffuseC * diffuseL * lambert;
 
-	float spec = 0.0;
+    float spec = 0.0;
 
-	if (lambert > 0) {
-		vec3 halfDir = normalize(viewDir + lightDir);
-		float angle = max(dot(pass_Normal, halfDir), 0.0);
-		spec = pow(angle, shininess);
-	}
+    if (lambert > 0) {
+        vec3 halfDir = normalize(viewDir + lightDir);
+        float angle = max(dot(pass_Normal, halfDir), 0.0);
+        spec = pow(angle, shininess);
+    }
 
-	vec3 specular = specularC * spec;
-	
+    vec3 specular = specularC * spec;
+    
 
-	vec3 color = ambient + diffuse + specular;
+    vec3 color = ambient + diffuse + specular;
 
-	out_Color = vec4(color, 1.0);
+    out_Color = vec4(color, 1.0);
 }

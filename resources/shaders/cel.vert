@@ -27,6 +27,6 @@ void main(void)
 	// hopefully position of vertex in world space
 	vec3 temp = ((ViewMatrix * ModelMatrix) * vec4(in_Position, 1.0)).xyz;
 	viewDir = normalize(-temp);
-	lightDir = normalize(lightPos - temp);
+	lightDir = normalize(light - temp);
 	pass_Color = Color;
 }
