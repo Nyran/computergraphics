@@ -3,6 +3,8 @@
 // vertex attributes of VAO
 layout(location = 0) in vec3 in_Position;
 layout(location = 1) in vec3 in_Normal;
+layout(location = 2) in vec2 tex_Coord;
+layout(location = 3) in vec3 in_Tangent;
 
 //Matrix Uniforms as specified with glUniform
 uniform mat4 ModelMatrix;
@@ -15,6 +17,8 @@ out vec3 pass_Normal;
 out vec3 pass_Color;
 out vec3 lightDir;
 out vec3 viewDir;
+out vec2 pass_tex_Coord;
+out vec3 pass_Tangent;
 
 
 vec3 lightPos = vec3(0.0, 0.0, 0.0);
@@ -29,4 +33,6 @@ void main(void)
 	viewDir = normalize(-temp);
 	lightDir = normalize(light - temp);
 	pass_Color = Color;
+	pass_tex_Coord = tex_Coord;
+	pass_Tangent = normalize((ViewMatrix * vec4(in_Tangent, 1.0)).xyz);
 }

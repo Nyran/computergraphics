@@ -7,6 +7,7 @@
 
 #include "planet.hpp"
 #include <array>
+#include "texture_loader.hpp"
 
 // gpu representation of model
 class ApplicationSolar : public Application {
@@ -38,8 +39,12 @@ class ApplicationSolar : public Application {
   std::vector<float> create_orbit(int const depth) const;
   void upload_orbit(Planet const& planet) const;
 
+  // upload skymap
+  void upload_skymap() const;
+
  protected:
   void initializeShaderPrograms();
+  void initializeTextures();
   void initializeGeometry();
   void updateView();
 
@@ -47,6 +52,9 @@ class ApplicationSolar : public Application {
   model_object planet_object;
   model_object star_object;
   model_object orbit_object;
+
+  // texture object
+  texture_object tex_object;
 
   // planet container
   std::array<std::shared_ptr<Planet>, 11> planets;
