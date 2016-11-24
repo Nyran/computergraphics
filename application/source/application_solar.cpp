@@ -77,12 +77,18 @@ void ApplicationSolar::render() const{
 
 	glUniform1i(m_shaders.at(shader).u_locs.at("ColorTex"), 5);*/
 
-	for (auto planet : planets) {
+  try {
+    upload_skymap();
+  }
+  catch (std::exception e) {
+    std::cerr << "ERROR in upload_skymap(): " << e.what() << std::endl;
+  }
+
+  for (auto planet : planets) {
 		upload_planet_transforms(*planet);
 	}
 
 	upload_stars();
-  upload_skymap();
 }
 
 void ApplicationSolar::updateView() {
@@ -98,6 +104,9 @@ void ApplicationSolar::updateView() {
 	glUseProgram(m_shaders.at("orbit").handle);
 	glUniformMatrix4fv(m_shaders.at("orbit").u_locs.at("ViewMatrix"),
 		1, GL_FALSE, glm::value_ptr(view_matrix));
+  glUseProgram(m_shaders.at("skymap").handle);
+  glUniformMatrix4fv(m_shaders.at("skymap").u_locs.at("ViewMatrix"),
+    1, GL_FALSE, glm::value_ptr(view_matrix));
 }
 
 void ApplicationSolar::updateProjection() {
@@ -111,6 +120,9 @@ void ApplicationSolar::updateProjection() {
 	glUseProgram(m_shaders.at("orbit").handle);
 	glUniformMatrix4fv(m_shaders.at("orbit").u_locs.at("ProjectionMatrix"),
 		1, GL_FALSE, glm::value_ptr(m_view_projection));
+  glUseProgram(m_shaders.at("skymap").handle);
+  glUniformMatrix4fv(m_shaders.at("skymap").u_locs.at("ProjectionMatrix"),
+    1, GL_FALSE, glm::value_ptr(m_view_projection));
 
 //  glUniformMatrix4fv(m_shaders.at("star").u_locs.at("ProjectionMatrix"),
 //    1, GL_FALSE, glm::value_ptr(m_view_projection));
@@ -188,6 +200,8 @@ void ApplicationSolar::initializeShaderPrograms() {
 											m_resource_path + "shaders/orbit.frag" });
 	m_shaders.emplace("cel", shader_program{ m_resource_path + "shaders/cel.vert",
 											m_resource_path + "shaders/cel.frag" });
+  m_shaders.emplace("skymap", shader_program{ m_resource_path + "shaders/skymap.vert",
+    m_resource_path + "shaders/skymap.frag" });
 
 	// request uniform locations for shader program
 	m_shaders.at("planet").u_locs["NormalMatrix"] = -1;
@@ -210,6 +224,10 @@ void ApplicationSolar::initializeShaderPrograms() {
 	m_shaders.at("cel").u_locs["ViewMatrix"] = -1;
 	m_shaders.at("cel").u_locs["ProjectionMatrix"] = -1;
 	m_shaders.at("cel").u_locs["Color"] = -1;
+
+  m_shaders.at("skymap").u_locs["ViewMatrix"] = -1;
+  m_shaders.at("skymap").u_locs["ProjectionMatrix"] = -1;
+  m_shaders.at("skymap").u_locs["ColorTex"] = -1;
 }
 
 void ApplicationSolar::initializeTextures() {
@@ -490,23 +508,7 @@ void ApplicationSolar::upload_planet_transforms(Planet const& planet) const {
 }
 
 void ApplicationSolar::upload_skymap() const {
-  // usually skyboxes/spheres should not use shading, but we like it that way
-  // to avoid shading, one must exclude specular and diffuse from out_Color in simple.frag
-  // or write a new shader
-  glUseProgram(m_shaders.at(shader).handle);
-
-  glm::mat4 model_matrix;
-  model_matrix = glm::scale(model_matrix, glm::fvec3{ 50 });
-  glUniformMatrix4fv(m_shaders.at(shader).u_locs.at("ModelMatrix"),
-    1, GL_FALSE, glm::value_ptr(model_matrix));
-
-  // extra matrix for normal transformation to keep them orthogonal to surface
-  glm::fmat4 normal_matrix = glm::inverseTranspose(glm::inverse(m_view_transform) * model_matrix);
-  glUniformMatrix4fv(m_shaders.at(shader).u_locs.at("NormalMatrix"),
-    1, GL_FALSE, glm::value_ptr(normal_matrix));
-
-  glm::fvec3 color_vector = glm::vec3{ 0 };
-  glUniform3fv(m_shaders.at(shader).u_locs.at("Color"), 1, glm::value_ptr(color_vector));
+  glUseProgram(m_shaders.at("skymap").handle);
 
   // bind the VAO to draw
   glBindVertexArray(planet_object.vertex_AO);
@@ -515,7 +517,9 @@ void ApplicationSolar::upload_skymap() const {
 
   glUniform1i(m_shaders.at(shader).u_locs.at("ColorTex"), 16);
 
+  glDisable(GL_DEPTH_TEST);
   glDrawElements(planet_object.draw_mode, planet_object.num_elements, model::INDEX.type, NULL);
+  glEnable(GL_DEPTH_TEST);
 }
 
 void ApplicationSolar::upload_stars() const {
