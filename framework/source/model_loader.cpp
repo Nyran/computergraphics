@@ -164,12 +164,12 @@ std::vector<glm::fvec3> generate_tangents(tinyobj::mesh_t const& model) {
 
 			float frac = 1.0 / (deltaUV_1.x *deltaUV_2.y - deltaUV_2.x * deltaUV_1.y);
 
-			glm::fvec3 tangent = frac * (deltaP_1 * deltaUV_2.y - deltaP_1 * deltaUV_1.y);
+			glm::fvec3 tangent = frac * (deltaP_1 * deltaUV_2.y - deltaP_2 * deltaUV_1.y);
 			tangent = glm::normalize(tangent);
 
+			tangents[indices[0]] += tangent;
 			tangents[indices[1]] += tangent;
 			tangents[indices[2]] += tangent;
-			tangents[indices[3]] += tangent;
 		}
 		catch (std::exception e) {
 			std::cerr << e.what() << std::endl;

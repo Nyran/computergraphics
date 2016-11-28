@@ -451,7 +451,7 @@ void ApplicationSolar::upload_planet_transforms(Planet const& planet) const {
 	std::stack<glm::mat4> matrices;
 	std::shared_ptr<Planet> current = planet.parent;
 	while (current != nullptr) {
-		model_matrix = glm::rotate(glm::fmat4{}, float(glfwGetTime() * current->orbital_speed), glm::fvec3{ 0.0f, 1.0f, 0.0f });
+		model_matrix = glm::rotate(glm::fmat4{}, float(/*glfwGetTime() */ current->orbital_speed), glm::fvec3{ 0.0f, 1.0f, 0.0f });
 		model_matrix = glm::translate(model_matrix, glm::fvec3{ 0.0f, 0.0f, -1.0f * current->distance });
 		matrices.push(model_matrix);
 		current = current->parent;
@@ -465,7 +465,7 @@ void ApplicationSolar::upload_planet_transforms(Planet const& planet) const {
 	// bind shader to upload uniforms
 	glUseProgram(m_shaders.at(shader).handle);
 
-	model_matrix = glm::rotate(model_matrix, float(glfwGetTime() * planet.orbital_speed), glm::fvec3{ 0.0f, 1.0f, 0.0f });
+	model_matrix = glm::rotate(model_matrix, float(/*glfwGetTime() */ planet.orbital_speed), glm::fvec3{ 0.0f, 1.0f, 0.0f });
 	model_matrix = glm::translate(model_matrix, glm::fvec3{ 0.0f, 0.0f, -1.0f * planet.distance });
 	model_matrix = glm::scale(model_matrix, glm::fvec3{planet.size});
 	glUniformMatrix4fv(m_shaders.at(shader).u_locs.at("ModelMatrix"),
@@ -515,7 +515,7 @@ void ApplicationSolar::upload_skymap() const {
 
   glActiveTexture(GL_TEXTURE16);
 
-  glUniform1i(m_shaders.at(shader).u_locs.at("ColorTex"), 16);
+  glUniform1i(m_shaders.at("skymap").u_locs.at("ColorTex"), 16);
 
   glDisable(GL_DEPTH_TEST);
   glDrawElements(planet_object.draw_mode, planet_object.num_elements, model::INDEX.type, NULL);

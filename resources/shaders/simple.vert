@@ -34,5 +34,5 @@ void main(void)
 	lightDir = normalize(light - temp);
 	pass_Color = Color;
 	pass_tex_Coord = tex_Coord;
-	pass_Tangent = normalize((ViewMatrix * vec4(in_Tangent, 1.0)).xyz);
+	pass_Tangent = normalize((NormalMatrix * vec4(in_Tangent, 1.0)).xyz);
 }
