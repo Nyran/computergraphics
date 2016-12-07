@@ -4,10 +4,13 @@
 #include "application.hpp"
 #include "model.hpp"
 #include "structs.hpp"
+#include "options.hpp"
 
 #include "planet.hpp"
 #include <array>
 #include "texture_loader.hpp"
+
+
 
 // gpu representation of model
 class ApplicationSolar : public Application {
@@ -45,6 +48,7 @@ class ApplicationSolar : public Application {
  protected:
   void initializeShaderPrograms();
   void initializeTextures();
+  void initializeFramebuffer();
   void initializeGeometry();
   void updateView();
 
@@ -52,15 +56,28 @@ class ApplicationSolar : public Application {
   model_object planet_object;
   model_object star_object;
   model_object orbit_object;
+  model_object squad_object;
 
   // texture object
   texture_object tex_object;
+
+  //texture object for framebuffer
+  GLuint tex_handle;
+
+  //renderbuffer object
+  GLuint rb_handle;
+
+  //framebuffer object
+  GLuint fbo_handle;
 
   // planet container
   std::array<std::shared_ptr<Planet>, 11> planets;
 
   // current shader
   std::string shader = "planet";
+
+  // render options
+  Options renderopts;
 };
 
 #endif

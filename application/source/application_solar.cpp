@@ -27,68 +27,53 @@ ApplicationSolar::ApplicationSolar(std::string const& resource_path)
  ,star_object{}
  ,orbit_object{}
 {
-  try {
-    initializeGeometry();
-  }
-  catch (std::exception e) {
-    std::cerr << "ERROR: " << e.what() << std::endl;
-  }
+  initializeGeometry();
 	initializeShaderPrograms();
 	initializeTextures();
+	initializeFramebuffer();
 }
 
 void ApplicationSolar::render() const{
-	/*
-	// bind shader to upload uniforms
-	glUseProgram(m_shaders.at("planet").handle);
+  glBindFramebuffer(GL_FRAMEBUFFER, fbo_handle);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glEnable(GL_DEPTH_TEST);
 
-	glm::fmat4 model_matrix = glm::rotate(glm::fmat4{}, float(glfwGetTime()), glm::fvec3{0.0f, 2.0f, 0.0f});
-	model_matrix = glm::translate(model_matrix, glm::fvec3{0.0f, 0.0f, -1.0f});
-	glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("ModelMatrix"),
-										 1, GL_FALSE, glm::value_ptr(model_matrix));
-
-	// extra matrix for normal transformation to keep them orthogonal to surface
-	glm::fmat4 normal_matrix = glm::inverseTranspose(glm::inverse(m_view_transform) * model_matrix);
-	glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("NormalMatrix"),
-										 1, GL_FALSE, glm::value_ptr(normal_matrix));
-
-	// bind the VAO to draw
-	glBindVertexArray(planet_object.vertex_AO);
-
-	// draw bound vertex array using bound shader
-	glDrawElements(planet_object.draw_mode, planet_object.num_elements, model::INDEX.type, NULL);
-	*/
-	/*glUseProgram(m_shaders.at(shader).handle);
-
-	std::string tex_path = m_resource_path + "textures/" + planets[4]->texture;
-	pixel_data px_data;
-	px_data = texture_loader::file(tex_path);
-
-	glActiveTexture(GL_TEXTURE5);
-	glGenTextures(1, &tex_object.handle);
-	glBindTexture(GL_TEXTURE_2D, tex_object.handle);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, px_data.channels, px_data.width, px_data.height, 0, px_data.channels, px_data.channel_type, px_data.pixels.data());
-
-	glActiveTexture(GL_TEXTURE5);
-
-	glUniform1i(m_shaders.at(shader).u_locs.at("ColorTex"), 5);*/
-
-  try {
-    upload_skymap();
-  }
-  catch (std::exception e) {
-    std::cerr << "ERROR in upload_skymap(): " << e.what() << std::endl;
-  }
+  upload_skymap();
 
   for (auto planet : planets) {
 		upload_planet_transforms(*planet);
 	}
 
 	upload_stars();
+
+  // render offscreen framebuffer to screen quad
+  try {
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST);
+
+    glBindVertexArray(squad_object.vertex_AO);
+    glUseProgram(m_shaders.at("squad").handle);
+
+    glActiveTexture(GL_TEXTURE17);
+    glUniform1i(m_shaders.at("squad").u_locs.at("squad_texture"), 17);
+
+    GLuint loc;
+    loc = glGetUniformLocation(m_shaders.at("squad").handle, "opts.grayscale");
+    glUniform1i(loc, renderopts.grayscale);
+    loc = glGetUniformLocation(m_shaders.at("squad").handle, "opts.mirrorx");
+    glUniform1i(loc, renderopts.mirrorx);
+    loc = glGetUniformLocation(m_shaders.at("squad").handle, "opts.mirrory");
+    glUniform1i(loc, renderopts.mirrory);
+    loc = glGetUniformLocation(m_shaders.at("squad").handle, "opts.gaussblur");
+    glUniform1i(loc, renderopts.gaussblur);
+
+
+    glDrawArrays(squad_object.draw_mode, NULL, squad_object.num_elements);
+  }
+  catch (std::exception e) {
+    std::cerr << "ERROR while rendering squad: " << e.what() << std::endl;
+  }
 }
 
 void ApplicationSolar::updateView() {
@@ -97,16 +82,16 @@ void ApplicationSolar::updateView() {
 	// upload matrix to gpu
 	glUseProgram(m_shaders.at(shader).handle);
 	glUniformMatrix4fv(m_shaders.at(shader).u_locs.at("ViewMatrix"),
-										 1, GL_FALSE, glm::value_ptr(view_matrix));
+		1, GL_FALSE, glm::value_ptr(view_matrix));
 	glUseProgram(m_shaders.at("star").handle);
 	glUniformMatrix4fv(m_shaders.at("star").u_locs.at("ViewMatrix"),
 		1, GL_FALSE, glm::value_ptr(view_matrix));
 	glUseProgram(m_shaders.at("orbit").handle);
 	glUniformMatrix4fv(m_shaders.at("orbit").u_locs.at("ViewMatrix"),
 		1, GL_FALSE, glm::value_ptr(view_matrix));
-  glUseProgram(m_shaders.at("skymap").handle);
-  glUniformMatrix4fv(m_shaders.at("skymap").u_locs.at("ViewMatrix"),
-    1, GL_FALSE, glm::value_ptr(view_matrix));
+	glUseProgram(m_shaders.at("skymap").handle);
+	glUniformMatrix4fv(m_shaders.at("skymap").u_locs.at("ViewMatrix"),
+		1, GL_FALSE, glm::value_ptr(view_matrix));
 }
 
 void ApplicationSolar::updateProjection() {
@@ -120,12 +105,11 @@ void ApplicationSolar::updateProjection() {
 	glUseProgram(m_shaders.at("orbit").handle);
 	glUniformMatrix4fv(m_shaders.at("orbit").u_locs.at("ProjectionMatrix"),
 		1, GL_FALSE, glm::value_ptr(m_view_projection));
-  glUseProgram(m_shaders.at("skymap").handle);
-  glUniformMatrix4fv(m_shaders.at("skymap").u_locs.at("ProjectionMatrix"),
-    1, GL_FALSE, glm::value_ptr(m_view_projection));
+	glUseProgram(m_shaders.at("skymap").handle);
+	glUniformMatrix4fv(m_shaders.at("skymap").u_locs.at("ProjectionMatrix"),
+		1, GL_FALSE, glm::value_ptr(m_view_projection));
 
-//  glUniformMatrix4fv(m_shaders.at("star").u_locs.at("ProjectionMatrix"),
-//    1, GL_FALSE, glm::value_ptr(m_view_projection));
+
 }
 
 // update uniform locations
@@ -175,6 +159,18 @@ void ApplicationSolar::keyCallback(int key, int scancode, int action, int mods) 
 		shader = "cel";
 		uploadUniforms();
 	}
+  else if (key == GLFW_KEY_7 && action == GLFW_PRESS) {
+    renderopts.grayscale =  !renderopts.grayscale;
+  }
+  else if (key == GLFW_KEY_8 && action == GLFW_PRESS) {
+    renderopts.mirrorx = !renderopts.mirrorx;
+  }
+  else if (key == GLFW_KEY_9 && action == GLFW_PRESS) {
+    renderopts.mirrory = !renderopts.mirrory;
+  }
+  else if (key == GLFW_KEY_0 && action == GLFW_PRESS) {
+    renderopts.gaussblur = !renderopts.gaussblur;
+  }
 }
 
 // handle delta mouse movement input
@@ -200,8 +196,10 @@ void ApplicationSolar::initializeShaderPrograms() {
 											m_resource_path + "shaders/orbit.frag" });
 	m_shaders.emplace("cel", shader_program{ m_resource_path + "shaders/cel.vert",
 											m_resource_path + "shaders/cel.frag" });
-  m_shaders.emplace("skymap", shader_program{ m_resource_path + "shaders/skymap.vert",
-    m_resource_path + "shaders/skymap.frag" });
+	m_shaders.emplace("skymap", shader_program{ m_resource_path + "shaders/skymap.vert",
+											m_resource_path + "shaders/skymap.frag" });
+  m_shaders.emplace("squad", shader_program{ m_resource_path + "shaders/squad.vert",
+                      m_resource_path + "shaders/squad.frag" });
 
 	// request uniform locations for shader program
 	m_shaders.at("planet").u_locs["NormalMatrix"] = -1;
@@ -225,9 +223,12 @@ void ApplicationSolar::initializeShaderPrograms() {
 	m_shaders.at("cel").u_locs["ProjectionMatrix"] = -1;
 	m_shaders.at("cel").u_locs["Color"] = -1;
 
-  m_shaders.at("skymap").u_locs["ViewMatrix"] = -1;
-  m_shaders.at("skymap").u_locs["ProjectionMatrix"] = -1;
-  m_shaders.at("skymap").u_locs["ColorTex"] = -1;
+	m_shaders.at("skymap").u_locs["ViewMatrix"] = -1;
+	m_shaders.at("skymap").u_locs["ProjectionMatrix"] = -1;
+	m_shaders.at("skymap").u_locs["ColorTex"] = -1;
+
+  m_shaders.at("squad").u_locs["squad_texture"] = -1;
+  m_shaders.at("squad").u_locs["opts"] = -1;
 }
 
 void ApplicationSolar::initializeTextures() {
@@ -293,6 +294,35 @@ void ApplicationSolar::initializeTextures() {
 	}
 	catch (std::exception e) {
 		std::cerr << e.what() << std::endl;
+	}
+}
+
+void ApplicationSolar::initializeFramebuffer() {
+  glActiveTexture(GL_TEXTURE17);
+	glGenTextures(1, &tex_handle);
+	glBindTexture(GL_TEXTURE_2D, tex_handle);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+
+	glGenRenderbuffers(1, &rb_handle);
+	glBindRenderbuffer(GL_RENDERBUFFER, rb_handle);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 640, 480);
+
+	glGenFramebuffers(1, &fbo_handle);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo_handle);
+
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex_handle, 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rb_handle);
+
+	GLenum draw_buffer[1] = {GL_COLOR_ATTACHMENT0};
+	glDrawBuffers(1, draw_buffer);
+
+	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (status != GL_FRAMEBUFFER_COMPLETE) {
+		std::cerr << "ERROR: Framebuffer object incomplete!" << std::endl;
 	}
 }
 
@@ -444,6 +474,24 @@ void ApplicationSolar::initializeGeometry() {
 	// draw mode is GL_LINE_LOOP to connect single vertices with edges
 	orbit_object.draw_mode = GL_LINE_LOOP;
 	orbit_object.num_elements = GLsizei(orbit.size()/3);
+
+  // Screen Quad
+  // create squad model       v1------------>  v2----------->  v4----------->  v3---------->
+  std::vector<GLfloat> squad{ -1.0, -1.0, 0.0, 1.0, -1.0, 0.0, -1.0, 1.0, 0.0, 1.0, 1.0, 0.0 };
+  glGenBuffers(1, &squad_object.vertex_BO);
+  glBindBuffer(GL_ARRAY_BUFFER, squad_object.vertex_BO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(float) * squad.size(), squad.data(), GL_STATIC_DRAW);
+
+  glGenVertexArrays(1, &squad_object.vertex_AO);
+  glBindVertexArray(squad_object.vertex_AO);
+
+  glBindBuffer(GL_ARRAY_BUFFER, squad_object.vertex_BO);
+
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_TRUE, sizeof(float) * 3, 0);
+
+  squad_object.draw_mode = GL_TRIANGLE_STRIP;
+  squad_object.num_elements = GLsizei(squad.size() / 3);
 }
 
 void ApplicationSolar::upload_planet_transforms(Planet const& planet) const {
@@ -451,7 +499,7 @@ void ApplicationSolar::upload_planet_transforms(Planet const& planet) const {
 	std::stack<glm::mat4> matrices;
 	std::shared_ptr<Planet> current = planet.parent;
 	while (current != nullptr) {
-		model_matrix = glm::rotate(glm::fmat4{}, float(glfwGetTime() * current->orbital_speed), glm::fvec3{ 0.0f, 1.0f, 0.0f });
+		model_matrix = glm::rotate(glm::fmat4{}, float(/*glfwGetTime() */ current->orbital_speed), glm::fvec3{ 0.0f, 1.0f, 0.0f });
 		model_matrix = glm::translate(model_matrix, glm::fvec3{ 0.0f, 0.0f, -1.0f * current->distance });
 		matrices.push(model_matrix);
 		current = current->parent;
@@ -465,7 +513,7 @@ void ApplicationSolar::upload_planet_transforms(Planet const& planet) const {
 	// bind shader to upload uniforms
 	glUseProgram(m_shaders.at(shader).handle);
 
-	model_matrix = glm::rotate(model_matrix, float(glfwGetTime() * planet.orbital_speed), glm::fvec3{ 0.0f, 1.0f, 0.0f });
+	model_matrix = glm::rotate(model_matrix, float(/*glfwGetTime() */ planet.orbital_speed), glm::fvec3{ 0.0f, 1.0f, 0.0f });
 	model_matrix = glm::translate(model_matrix, glm::fvec3{ 0.0f, 0.0f, -1.0f * planet.distance });
 	model_matrix = glm::scale(model_matrix, glm::fvec3{planet.size});
 	glUniformMatrix4fv(m_shaders.at(shader).u_locs.at("ModelMatrix"),
