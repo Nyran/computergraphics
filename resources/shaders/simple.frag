@@ -28,7 +28,12 @@ float shininess = 16;
 void main() {
     vec3 bi_Tangent = normalize(cross(pass_Normal, pass_Tangent));
     mat3 tangent_space_mat = mat3(pass_Tangent, bi_Tangent, pass_Normal);
-    vec3 normal = normalize(tangent_space_mat * normal_Color.rgb);
+
+    float norm_x = normal_Color.x * 2.0 - 1.0;
+    float norm_y = normal_Color.y * 2.0 - 1.0;
+    vec3 tSpace_normal = normalize(vec3(norm_x, norm_y, normal_Color.z));
+
+    vec3 normal = normalize(tangent_space_mat * tSpace_normal);
 
     vec4 ambient = ambientC * ambientL;
 
